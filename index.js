@@ -324,6 +324,68 @@ booky.post("/pub/new",(req,res)=>{
 
 /*************PUT**************/
 /*
+Route           /book/update
+Description     Update book title on isbn
+Access          PUBLIC
+Parameter       isbn
+Methods         PUT
+*/
+
+booky.put("/book/update/:isbn",async (req,res)=>{
+    const updatedBooks = await BookModel.findOneAndUpdate(
+        {
+            ISBN:req.params.isbn
+        },
+        {
+            title:req.body.bookTitle
+        },
+        {
+            new:true
+        }
+    )
+    return res.json({
+        books:updatedBooks
+    })
+})
+/*
+Route           /book/auhtor/update
+Description     Update/add new auhtor on isbn of book
+Access          PUBLIC
+Parameter       isbn
+Methods         PUT
+*/
+booky.put("/book/author/update/:isbn",async(req,res)=>{
+    //Update the books DB
+    const updatedBooks = await BookModel.findOneAndUpdate(
+        {
+            ISBN:req.params.isbn
+        },
+        {$addToSet : {
+            author:req.body.authorId
+        }},
+        {
+            new:true
+        }
+    )
+    //Update the author DB
+    const updatedAuthor = await AuthorModel.findOneAndUpdate(
+        {
+            id:req.body.authorId
+        },
+        {$addToSet : {
+            books:req.params.isbn
+        }},
+        {
+            new:true
+        }
+    )
+    return res.json({
+        books:updatedBooks,
+        author:updatedAuthor
+    })
+})
+
+/*
 Route           /pub/update/book
 Description     Update / add new publication
 Access          PUBLIC
@@ -369,7 +431,7 @@ Access          PUBLIC
 Parameter       isbn
 Methods         DELETE
 */
-booky.delete("/book/delete/:isbn",(req,res)=>{
+booky.delete("/book/delete/:isbn",async(req,res)=>{
     /* My method to delete books*/
     // database.books.forEach((book)=>{
     //     if (book.ISBN === req.params.isbn){
@@ -379,12 +441,27 @@ booky.delete("/book/delete/:isbn",(req,res)=>{
     // })
 
     /* Maam ka method to delete books */
-    const updatedBooksDB = database.books.filter((book)=>
-        book.ISBN !== req.params.isbn
+//     const updatedBooksDB = database.books.filter((book)=>
+//         book.ISBN !== req.params.isbn
+//     )
+//     database.books = updatedBooksDB
+//     return res.json(database.books)
+    
+    /*Using MongoDB*/
+    const updatedBooksDB = await BookModel.findOneAndDelete(
+        {
+            ISBN:req.params.isbn
+        }
     )
-    database.books = updatedBooksDB
-    return res.json(database.books)
+    return res.json(
+        {
+            books:updatedBooksDB,
+            message:"Above Book Successfully deleted"
+        }
+    )
 })
+
+
 
 /*
 Route           /book/delete/author
